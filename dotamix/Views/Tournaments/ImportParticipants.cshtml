@@ -1,0 +1,36 @@
+@{
+    ViewData["Title"] = "Импорт участников";
+}
+
+<h1>Импорт участников из Google Forms</h1>
+
+<div class="alert alert-info">
+    <h4>Инструкция по импорту:</h4>
+    <ol>
+        <li>
+            Создайте форму в Google Forms со следующими полями:
+            <ul>
+                <li>name - имя участника</li>
+                <li>nickname - никнейм в игре</li>
+                <li>mmr - MMR участника</li>
+                <li>position - позиция (1-5)</li>
+                <li>phone - номер телефона</li>
+            </ul>
+        </li>
+        <li>Скопируйте ID формы из URL (часть между /d/ и /edit)</li>
+        <li>Вставьте ID формы в поле ниже</li>
+    </ol>
+</div>
+
+<form asp-action="ImportParticipants" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="id" value="@ViewBag.TournamentId" />
+
+    <div class="form-group">
+        <label for="excelFile">Загрузите Excel-файл</label>
+        <input type="file" class="form-control" id="excelFile" name="excelFile" accept=".xlsx" required />
+    </div>
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Импортировать</button>
+    </div>
+</form>

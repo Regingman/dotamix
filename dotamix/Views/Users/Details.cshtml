@@ -1,0 +1,96 @@
+@*@model dotamix.Models.User
+
+@{
+    ViewData["Title"] = "Детали пользователя";
+}
+
+<h1>Детали пользователя</h1>
+
+<div>
+    <dl class="row">
+        <dt class="col-sm-2">Имя</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Name)</dd>
+
+        <dt class="col-sm-2">Никнейм</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Nickname)</dd>
+    </dl>
+</div>
+
+@if (Model.TournamentParticipations != null && Model.TournamentParticipations.Any())
+{
+    <h3>Участие в турнирах</h3>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Турнир</th>
+                    <th>MMR</th>
+                    <th>Позиция</th>
+                    <th>Статус оплаты</th>
+                    <th>Капитан</th>
+                    <th>Команда</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var participant in Model.TournamentParticipations)
+                {
+                    <tr>
+                        <td>@participant.Tournament.Name</td>
+                        <td>@participant.MMR</td>
+                        <td>
+                            @switch (participant.Position)
+                            {
+                                case 1:
+                                    <span>1 (Керри)</span>
+                                    break;
+                                case 2:
+                                    <span>2 (Мид)</span>
+                                    break;
+                                case 3:
+                                    <span>3 (Оффлейн)</span>
+                                    break;
+                                case 4:
+                                    <span>4 (Поддержка)</span>
+                                    break;
+                                case 5:
+                                    <span>5 (Хард саппорт)</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            <span class="badge @(participant.IsPaid ? "bg-success" : "bg-danger")">
+                                @(participant.IsPaid ? "Оплачено" : "Не оплачено")
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge @(participant.IsCaptain ? "bg-primary" : "bg-secondary")">
+                                @(participant.IsCaptain ? "Да" : "Нет")
+                            </span>
+                        </td>
+                        <td>
+                            @if (participant.Team != null)
+                            {
+                                <a asp-controller="Teams" asp-action="Details" asp-route-id="@participant.Team.Id">
+                                    @participant.Team.Name
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Нет команды</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <p class="alert alert-info">Пользователь не участвует ни в одном турнире.</p>
+}
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Редактировать</a>
+    <a asp-action="Index" class="btn btn-secondary">Вернуться к списку</a>
+</div> *@

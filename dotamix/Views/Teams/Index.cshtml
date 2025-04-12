@@ -1,0 +1,39 @@
+@model IEnumerable<dotamix.Models.Team>
+
+@{
+    ViewData["Title"] = "Команды";
+}
+
+<h1>Команды</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Создать команду</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.Name)</th>
+            <th>@Html.DisplayNameFor(model => model.Tournament)</th>
+            <th>@Html.DisplayNameFor(model => model.Captain)</th>
+            <th>@Html.DisplayNameFor(model => model.IsWinner)</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                <td>@Html.DisplayFor(modelItem => item.Tournament.Name)</td>
+                <td>@Html.DisplayFor(modelItem => item.Captain.Name)</td>
+                <td>@(item.IsWinner ? "Да" : "Нет")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary">Редактировать</a>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Детали</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Удалить</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table> 

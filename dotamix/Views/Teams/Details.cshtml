@@ -1,0 +1,59 @@
+@model dotamix.Models.Team
+
+@{
+    ViewData["Title"] = "Детали команды";
+}
+
+<h1>Детали команды</h1>
+
+<div>
+    <dl class="row">
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.Name)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Name)</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.Tournament)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Tournament.Name)</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.Captain)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Captain.Name)</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.IsWinner)</dt>
+        <dd class="col-sm-10">@(Model.IsWinner ? "Да" : "Нет")</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.CreatedAt)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.CreatedAt)</dd>
+    </dl>
+
+    <h3>Игроки команды</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Имя</th>
+                <th>Никнейм</th>
+                <th>MMR</th>
+                <th>Позиции</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var player in Model.Players)
+            {
+                <tr>
+                    <td>@player.User.Name</td>
+                    <td>@player.User.Nickname</td>
+                    <td>@player.MMR</td>
+                    <td>
+                        @foreach (var position in player.GetPositions())
+                        {
+                            <span class="badge bg-primary me-1">@position</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Редактировать</a>
+    <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+</div> 

@@ -1,0 +1,836 @@
+@model Tournament
+@using dotamix.Models
+
+@{
+    ViewData["Title"] = "Сетка турнира";
+}
+
+<div class="tournament-bracket">
+    <h2 class="text-center mb-4">Сетка турнира "@Model.Name"</h2>
+
+    <div class="brackets-wrapper">
+        <!-- Верхняя сетка -->
+        <div class="bracket-section upper-bracket">
+            <div class="rounds-container">
+                @{
+                    var upperMatches = Model.Matches.Where(m => m.BracketType == BracketType.UpperBracket)
+                    .GroupBy(m => m.Round)
+                    .OrderBy(g => g.Key)
+                    .ToDictionary(g => g.Key, g => g.OrderBy(m => m.MatchNumber).ToList());
+
+                    var maxUpperRound = upperMatches.Any() ? upperMatches.Keys.Max() : 0;
+                }
+
+                @for (int round = 1; round <= maxUpperRound; round++)
+                {
+                    <div class="round" data-round="@round">
+                        <div class="round-header">
+                            <h4>Раунд @round</h4>
+                        </div>
+                        <div class="matches-container">
+                            @if (upperMatches.ContainsKey(round))
+                            {
+                                foreach (var match in upperMatches[round])
+                                {
+                                    <div class="match-box @(match.IsCompleted ? "completed" : "")"
+                             data-match-id="@match.Id">
+                                        <div class="match-number">Матч #@match.MatchNumber</div>
+                                        <div class="match-teams">
+                                            <div class="team @(match.IsCompleted && match.HomeTeamScore > match.AwayTeamScore ? "winner" : "")">
+                                                <span class="seed-number">@(match.HomeTeamSeed ?? 0)</span>
+
+                                                <span class="team-name">
+                                                    @if (match.HomeTeam?.Name != null)
+                                                    {
+                                                        @match.HomeTeam?.Name
+                                                    }
+                                                    else if (round == 1)
+                                                    {
+                                                        @($"Раунд {round - 1}, матч 1")
+                                                    }
+                                                    else if (round == 3 && match.MatchNumber == 1)
+                                                    {
+                                                        @($"Раунд {round - 1}, матч 1")
+                                                    }
+                                                    else if (round == 3 && match.MatchNumber == 2)
+                                                    {
+                                                        @($"Раунд {round - 1}, матч 3")
+                                                    }
+                                                    else
+                                                    {
+                                                        @($"Раунд {round - 1}, матч 1")
+                                                    }
+                                                </span>
+                                                @*<span class="team-name">@(match.HomeTeam?.Name ?? $"Раунд {round - 1}, матч {match.MatchNumber}")</span>*@
+                                                <span class="team-score">@match.HomeTeamScore</span>
+                                            </div>
+                                            <div class="team @(match.IsCompleted && match.AwayTeamScore > match.HomeTeamScore ? "winner" : "")">
+                                                <span class="seed-number">@(match.AwayTeamSeed ?? 0)</span>
+                                                <span class="team-name">
+                                                    @if (match.AwayTeam?.Name != null)
+                                                    {
+                                                        @match.AwayTeam?.Name
+                                                    }
+                                                    else if (round == 1)
+                                                    {
+                                                        @($"Раунд {round - 1}, матч 2")
+                                                    }
+                                                    else if (round == 3 && match.MatchNumber == 1)
+                                                    {
+                                                        @($"Раунд {round - 1}, матч 2")
+                                                    }
+                                                    else if (round == 3 && match.MatchNumber == 2)
+                                                    {
+                                                        @($"Раунд {round - 1}, матч 4")
+                                                    }
+                                                    else
+                                                    {
+                                                        @($"Раунд {round - 1}, матч 2")
+                                                    }
+                                                </span>
+                                                @*<span class="team-name">@(match.AwayTeam?.Name ?? $"Раунд {round - 1}, матч {match.MatchNumber}")</span>*@
+                                                <span class="team-score">@match.AwayTeamScore</span>
+                                            </div>
+                                        </div>
+                                        @if (!match.IsCompleted && (match.HomeTeamId != null || match.AwayTeamId != null))
+                                        {
+                                            <div class="match-actions">
+                                                <button class="btn btn-sm btn-primary update-score" data-match-id="@match.Id">
+                                                    Обновить счёт
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Гранд-финал -->
+                @{
+                    var finalMatch = Model.Matches.FirstOrDefault(m => m.BracketType == BracketType.GrandFinal);
+                }
+                @if (finalMatch != null)
+                {
+                    <div class="round grand-final">
+                        <div class="round-header">
+                            <h4>Гранд-финал</h4>
+                        </div>
+                        <div class="matches-container">
+                            <div class="match-box @(finalMatch.IsCompleted ? "completed" : "")"
+                             data-match-id="@finalMatch.Id">
+                                <div class="match-number">Матч #@finalMatch.MatchNumber</div>
+                                <div class="match-teams">
+                                    <div class="team @(finalMatch.WinnerNextMatch?.Id == finalMatch.HomeTeam?.Id ? "winner" : "")">
+                                        <span class="seed-number">@(finalMatch.HomeTeamSeed ?? 0)</span>
+                                        <span class="team-name">@(finalMatch.HomeTeam?.Name ?? "Победитель верхней сетки")</span>
+                                        <span class="team-score">@finalMatch.HomeTeamScore</span>
+                                    </div>
+                                    <div class="team @(finalMatch.WinnerNextMatch?.Id == finalMatch.AwayTeam?.Id ? "winner" : "")">
+                                        <span class="seed-number">@(finalMatch.AwayTeamSeed ?? 0)</span>
+                                        <span class="team-name">@(finalMatch.AwayTeam?.Name ?? "Победитель нижней сетки")</span>
+                                        <span class="team-score">@finalMatch.AwayTeamScore</span>
+                                    </div>
+                                </div>
+                                @if (!finalMatch.IsCompleted && (finalMatch.HomeTeam != null || finalMatch.AwayTeam != null))
+                                {
+                                    <div class="match-actions">
+                                        <button class="btn btn-sm btn-primary update-score" data-match-id="@finalMatch.Id">
+                                            Обновить счёт
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Нижняя сетка -->
+        <div class="bracket-section lower-bracket">
+            <div class="rounds-container">
+                @{
+                    var lowerMatches = Model.Matches.Where(m => m.BracketType == BracketType.LowerBracket)
+                    .GroupBy(m => m.Round)
+                    .OrderBy(g => g.Key)
+                    .ToDictionary(g => g.Key, g => g.OrderBy(m => m.MatchNumber).ToList());
+
+                    var maxLowerRound = lowerMatches.Any() ? lowerMatches.Keys.Max() : 0;
+                }
+
+                @for (int round = 1; round <= maxLowerRound; round++)
+                {
+                    <div class="round" data-round="@round">
+                        <div class="round-header">
+                            <h4>Раунд нижней сетки @round</h4>
+                        </div>
+                        <div class="matches-container">
+                            @if (lowerMatches.ContainsKey(round))
+                            {
+                                foreach (var match in lowerMatches[round])
+                                {
+                                    <div class="match-box @(match.IsCompleted ? "completed" : "")"
+                             data-match-id="@match.Id">
+                                        <div class="match-number">Матч #@match.MatchNumber</div>
+                                        <div class="match-teams">
+                                            <div class="team @(match.IsCompleted && match.HomeTeamScore > match.AwayTeamScore ? "winner" : "") ">
+                                                <span class="seed-number">@(match.HomeTeamSeed ?? 0)</span>
+
+                                                @if (match.HomeTeam != null)
+                                                {
+                                                    <span class="team-name">
+                                                        @match.HomeTeam.Name
+                                                    </span>
+                                                }
+                                                else if (match.BracketType == BracketType.LowerBracket)
+                                                {
+                                                    @if (match.HomeTeamId == null)
+                                                    {
+                                                        @if (round == 4)
+                                                        {
+                                                            <span class="team-name">
+                                                                @($"Раунд {round - 1}, матч {match.MatchNumber}")
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="team-name from-upper-bracket">
+                                                                @($"Раунд {round}, матч {match.MatchNumber}")
+                                                            </span>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        @if (round == 4)
+                                                        {
+                                                            <span class="team-name">
+                                                                @($"Раунд {round - 1}, матч {match.MatchNumber}")
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="team-name from-upper-bracket">
+                                                                @($"Раунд {round - 1}, матч {match.MatchNumber}")
+                                                            </span>
+                                                        }
+                                                    }
+                                                }
+                                                <span class="team-score">@match.HomeTeamScore</span>
+                                            </div>
+                                            <div class="team @(match.IsCompleted && match.AwayTeamScore > match.HomeTeamScore ? "winner" : "") ">
+                                                <span class="seed-number">@(match.AwayTeamSeed ?? 0)</span>
+                                                <span class="team-name">
+                                                    @if (match.AwayTeam != null)
+                                                    {
+                                                        @match.AwayTeam.Name
+                                                    }
+                                                    else if (match.BracketType == BracketType.LowerBracket)
+                                                    {
+                                                        @if (round == 4)
+                                                        {
+                                                            <span class="team-name">
+                                                                @($"Раунд {round - 1}, матч 2")
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="team-name">
+                                                                @($"Раунд {round - 1}, матч {match.MatchNumber}")
+                                                            </span>
+                                                        }
+                                                    }
+                                                </span>
+                                                <span class="team-score">@match.AwayTeamScore</span>
+                                            </div>
+                                        </div>
+                                        @if (!match.IsCompleted && (match.HomeTeam != null || match.AwayTeamId != null))
+                                        {
+                                            <div class="match-actions">
+                                                <button class="btn btn-sm btn-primary update-score" data-match-id="@match.Id">
+                                                    Обновить счёт
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для обновления счета -->
+<div class="modal fade" id="updateScoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Обновить счёт</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateScoreForm">
+                    <input type="hidden" id="matchId" name="matchId" />
+                    <div class="mb-3">
+                        <label for="homeTeamScore" class="form-label">Счёт первой команды</label>
+                        <input type="number" class="form-control" id="homeTeamScore" name="homeTeamScore" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="awayTeamScore" class="form-label">Счёт второй команды</label>
+                        <input type="number" class="form-control" id="awayTeamScore" name="awayTeamScore" min="0" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveScore">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .tournament-bracket {
+            padding: 20px;
+            background: #2b2b2b;
+            color: #fff;
+            overflow-x: auto;
+            min-width: 100%;
+        }
+
+        .brackets-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .bracket-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .upper-bracket {
+            background: rgba(43, 43, 43, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .lower-bracket {
+            background: rgba(43, 43, 43, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .rounds-container {
+            display: flex;
+            justify-content: flex-start;
+            gap: 40px;
+            padding: 10px 0;
+            position: relative;
+        }
+
+        .round {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 220px;
+            position: relative;
+        }
+
+        .round[data-round="1"] .matches-container {
+            padding-top: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .round[data-round="2"] .matches-container {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .round[data-round="3"] .matches-container,
+        .round[data-round="4"] .matches-container {
+            padding-top: 100px;
+        }
+
+        .round.grand-final {
+            margin-left: -20px;
+        }
+
+        .round-header {
+            padding: 5px 0;
+            text-align: center;
+            color: #fff;
+        }
+
+        .round-header h4 {
+            font-size: 0.9rem;
+            margin: 0;
+            font-weight: normal;
+        }
+
+        .matches-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+        }
+
+        .match-box {
+            background: #3d3d3d;
+            border-radius: 4px;
+            overflow: visible;
+            position: relative;
+            padding: 6px;
+            margin-bottom: 5px;
+            z-index: 1;
+        }
+
+        .round[data-round="1"] .match-box {
+            position: relative;
+        }
+
+        .round[data-round="1"] .match-box::after,
+        .round[data-round="1"] .match-box::before,
+        .round[data-round="1"] .matches-container::after,
+        .round[data-round="2"] .match-box:nth-child(4)::before,
+        .round[data-round="2"] .match-box:nth-child(4)::after {
+            display: none;
+        }
+
+        .round[data-round="2"] .match-box:nth-child(1),
+        .round[data-round="2"] .match-box:nth-child(2) {
+            position: relative;
+        }
+
+        .round[data-round="2"] .match-box:nth-child(1)::after,
+        .round[data-round="2"] .match-box:nth-child(2)::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 2px;
+            background: #555;
+        }
+
+        .round[data-round="2"] .match-box:nth-child(1)::before {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            height: 40px;
+            width: 2px;
+            background: #555;
+        }
+
+        .round[data-round="2"] .match-box:nth-child(2)::before {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            height: 40px;
+            width: 2px;
+            background: #555;
+            transform: translateY(-100%);
+        }
+
+        .round[data-round="3"] .match-box:nth-child(1)::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            width: 20px;
+            height: 2px;
+            background: #555;
+        }
+
+        .round[data-round="3"] .match-box:nth-child(1)::after {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid #555;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+            transform: translateY(-50%);
+        }
+
+        .round:not([data-round="1"]) .matches-container::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 25%;
+            height: 50%;
+            width: 2px;
+            background: #555;
+        }
+
+        .match-number {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4a4a4a;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #aaa;
+            z-index: 2;
+        }
+
+        .match-teams {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .team {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 3px 6px;
+            border-radius: 3px;
+            background: #4a4a4a;
+        }
+
+        .team.winner {
+            background: rgba(255, 127, 39, 0.3);
+            border-left: 3px solid #ff7f27;
+        }
+
+        .team.from-upper-bracket {
+            background: rgba(255, 255, 0, 0.1);
+            border-left: 3px solid #ffff00;
+        }
+
+        .seed-number {
+            color: #aaa;
+            font-size: 0.8rem;
+            min-width: 20px;
+        }
+
+        .team-name {
+            flex: 1;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .team-score {
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+            color: #ff7f27;
+        }
+
+        .match-actions {
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .match-actions button {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+        }
+
+        .round:last-child .match-box::after,
+        .round:last-child .match-box::before,
+        .round:last-child .matches-container::after,
+        .round.grand-final .match-box::after,
+        .round.grand-final .match-box::before,
+        .round.grand-final .matches-container::after {
+            display: none;
+        }
+
+        .lower-bracket .round[data-round="1"] .matches-container {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        .lower-bracket .round[data-round="2"] .matches-container {
+            padding-top: 40px;
+            padding-bottom: 40px;
+        }
+
+        .lower-bracket .round[data-round="3"] .matches-container {
+            padding-top: 80px;
+            padding-bottom: 80px;
+        }
+
+        .match-box::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: #555;
+            transform: translateY(-50%);
+        }
+
+        .round:not(:last-child) .matches-container::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: calc(25% + 10px);
+            height: calc(50% - 20px);
+            width: 1px;
+            background: #555;
+        }
+
+        .match-box::before {
+            content: '';
+            position: absolute;
+            right: -24px;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-left: 4px solid #555;
+            border-top: 3px solid transparent;
+            border-bottom: 3px solid transparent;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        /* Удаляем все старые стили для стрелок */
+        .match-box::after,
+        .match-box::before,
+        .matches-container::after,
+        .round[data-round] .match-box::after,
+        .round[data-round] .match-box::before,
+        .round[data-round] .matches-container::after {
+            display: none;
+        }
+
+        /* Стрелки для верхней сетки */
+        /* Раунд 1 -> Раунд 2 */
+        .round[data-round="1"] .match-box:nth-child(1)::after {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: #ffeb3b;
+        }
+
+        .round[data-round="1"] .match-box:nth-child(2)::after {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: #ffeb3b;
+        }
+
+        /* Раунд 2 -> Раунд 3 */
+        .round[data-round="2"] .match-box:nth-child(1)::after,
+        .round[data-round="2"] .match-box:nth-child(2)::after {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: #ffeb3b;
+        }
+
+        .round[data-round="2"] .match-box:nth-child(1)::before {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            height: 30px;
+            width: 1px;
+            background: #ffeb3b;
+        }
+
+        .round[data-round="2"] .match-box:nth-child(2)::before {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: calc(50% - 30px);
+            height: 30px;
+            width: 1px;
+            background: #ffeb3b;
+        }
+
+        /* Раунд 3 -> Раунд 4 */
+        .round[data-round="3"] .match-box::after {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: #ffeb3b;
+        }
+
+        /* Раунд 4 -> Гранд-финал */
+        .round[data-round="4"] .match-box::after {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: #ffeb3b;
+        }
+
+        /* Стрелки для нижней сетки */
+        /* Раунд 1 -> Раунд 2 */
+        .lower-bracket .round[data-round="1"] .match-box::after {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: #ffeb3b;
+        }
+
+        /* Раунд 2 -> Раунд 3 */
+        .lower-bracket .round[data-round="2"] .match-box:nth-child(1)::after,
+        .lower-bracket .round[data-round="2"] .match-box:nth-child(2)::after {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: #ffeb3b;
+        }
+
+        .lower-bracket .round[data-round="2"] .match-box:nth-child(1)::before {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            height: 30px;
+            width: 1px;
+            background: #ffeb3b;
+        }
+
+        .lower-bracket .round[data-round="2"] .match-box:nth-child(2)::before {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: calc(50% - 30px);
+            height: 30px;
+            width: 1px;
+            background: #ffeb3b;
+        }
+
+        /* Раунд 3 -> Раунд 4 */
+        .lower-bracket .round[data-round="3"] .match-box::after {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: #ffeb3b;
+        }
+
+        /* Раунд 4 -> Раунд 5 (финал нижней сетки) */
+        .lower-bracket .round[data-round="4"] .match-box::after {
+            content: '';
+            display: block;
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: #ffeb3b;
+        }
+
+        /* Стрелки-указатели */
+        .match-box::after {
+            content: '';
+            position: absolute;
+            right: -24px;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-left: 4px solid #ffeb3b;
+            border-top: 3px solid transparent;
+            border-bottom: 3px solid transparent;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        /* Убираем стрелки для последних матчей */
+        .round:last-child .match-box::after,
+        .round:last-child .match-box::before,
+        .round.grand-final .match-box::after,
+        .round.grand-final .match-box::before {
+            display: none;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Обработчик клика по кнопке обновления счета
+            $('.update-score').click(function () {
+                var matchId = $(this).closest('.match-box').data('match-id');
+                $('#matchId').val(matchId);
+                $('#updateScoreModal').modal('show');
+            });
+
+            // Обработчик сохранения счета
+            $('#saveScore').click(function () {
+                var matchId = $('#matchId').val();
+                var homeTeamScore = $('#homeTeamScore').val();
+                var awayTeamScore = $('#awayTeamScore').val();
+
+                $.ajax({
+                    url: '/Tournaments/UpdateMatchScore',
+                    type: 'POST',
+                    data: {
+                        matchId: matchId,
+                        homeTeamScore: homeTeamScore,
+                        awayTeamScore: awayTeamScore
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert('Ошибка при обновлении счета: ' + response.message);
+                        }
+                    },
+                    error: function () {
+                        alert('Произошла ошибка при обновлении счета');
+                    }
+                });
+            });
+        });
+    </script>
+} 

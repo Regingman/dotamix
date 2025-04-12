@@ -1,0 +1,61 @@
+@model IEnumerable<dotamix.Models.Tournament>
+
+@{
+    ViewData["Title"] = "Турниры";
+}
+
+<h1>Турниры</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Создать новый турнир</a>
+</p>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Дата начала</th>
+                <th>Дата окончания</th>
+                <th>Кол-во игроков</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Name</td>
+                    <td>@item.StartDate.ToString("dd.MM.yyyy")</td>
+                    <td>@item.EndDate.ToString("dd.MM.yyyy")</td>
+                    <td>@item.Participants.Count()</td>
+                    <td>
+                        <span class="badge @(item.Status == TournamentStatus.Completed ? "bg-success" : "bg-primary")">
+                            @item.Status.ToString()
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary btn-sm">Изменить</a>
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info btn-sm">Детали</a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">Удалить</a>
+                            @if (item.Status == TournamentStatus.TeamFormation)
+                            {
+                                <a asp-action="FormTeams" asp-route-id="@item.Id" class="btn btn-success btn-sm">Формировать команды</a>
+                            }
+                            @if (item.Status == TournamentStatus.BracketGeneration)
+                            {
+                                <a asp-action="GenerateBracket" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Генерировать сетку</a>
+                            }
+                            @if (item.Status == TournamentStatus.InProgress)
+                            {
+                                <a asp-action="Bracket" asp-route-id="@item.Id" class="btn btn-info btn-sm">Турнирная сетка</a>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div> 

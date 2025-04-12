@@ -1,0 +1,25 @@
+@model dotamix.Models.User
+
+@{
+    ViewData["Title"] = "Удаление пользователя";
+}
+
+<h1>Удаление пользователя</h1>
+
+<h3>Вы уверены, что хотите удалить этого пользователя?</h3>
+
+<div>
+    <dl class="row">
+        <dt class="col-sm-2">Имя</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Name)</dd>
+
+        <dt class="col-sm-2">Никнейм</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Nickname)</dd>
+    </dl>
+    
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <input type="submit" value="Удалить" class="btn btn-danger" />
+        <a asp-action="Index" class="btn btn-secondary">Вернуться к списку</a>
+    </form>
+</div> 
