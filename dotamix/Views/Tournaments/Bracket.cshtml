@@ -343,7 +343,7 @@
         }
 
         .round[data-round="1"] .matches-container {
-            padding-top: 200px;
+            padding-top: 300px;
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -398,73 +398,56 @@
             position: relative;
         }
 
-        .round[data-round="1"] .match-box::after,
-        .round[data-round="1"] .match-box::before,
-        .round[data-round="1"] .matches-container::after,
-        .round[data-round="2"] .match-box:nth-child(4)::before,
-        .round[data-round="2"] .match-box:nth-child(4)::after {
-            display: none;
+        .round[data-round="1"] .match-box::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: #aaa;
         }
 
-        .round[data-round="2"] .match-box:nth-child(1),
-        .round[data-round="2"] .match-box:nth-child(2) {
+        .round[data-round="2"] .match-box {
             position: relative;
         }
 
-        .round[data-round="2"] .match-box:nth-child(1)::after,
-        .round[data-round="2"] .match-box:nth-child(2)::after {
+        .round[data-round="2"] .match-box::after {
             content: '';
             position: absolute;
             right: -20px;
             top: 50%;
             width: 20px;
-            height: 2px;
-            background: #555;
+            height: 1px;
+            background: #aaa;
         }
 
-        .round[data-round="2"] .match-box:nth-child(1)::before {
+        .round[data-round="3"] .match-box {
+            position: relative;
+        }
+
+        .round[data-round="3"] .match-box::after {
             content: '';
             position: absolute;
             right: -20px;
-            top: 50%;
-            height: 40px;
-            width: 2px;
-            background: #555;
-        }
-
-        .round[data-round="2"] .match-box:nth-child(2)::before {
-            content: '';
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            height: 40px;
-            width: 2px;
-            background: #555;
-            transform: translateY(-100%);
-        }
-
-        .round[data-round="3"] .match-box:nth-child(1)::before {
-            content: '';
-            position: absolute;
-            left: -20px;
             top: 50%;
             width: 20px;
-            height: 2px;
-            background: #555;
+            height: 1px;
+            background: #aaa;
         }
 
-        .round[data-round="3"] .match-box:nth-child(1)::after {
+        .round[data-round="4"] .match-box {
+            position: relative;
+        }
+
+        .round[data-round="4"] .match-box::after {
             content: '';
             position: absolute;
-            left: -5px;
+            right: -20px;
             top: 50%;
-            width: 0;
-            height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid #555;
-            border-top: 4px solid transparent;
-            border-bottom: 4px solid transparent;
-            transform: translateY(-50%);
+            width: 20px;
+            height: 1px;
+            background: #aaa;
         }
 
         .round:not([data-round="1"]) .matches-container::after {
@@ -615,181 +598,24 @@
             display: none;
         }
 
-        /* Стрелки для верхней сетки */
-        /* Раунд 1 -> Раунд 2 */
-        .round[data-round="1"] .match-box:nth-child(1)::after {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            width: 20px;
-            height: 1px;
-            background: #ffeb3b;
-        }
-
-        .round[data-round="1"] .match-box:nth-child(2)::after {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            width: 20px;
-            height: 1px;
-            background: #ffeb3b;
-        }
-
-        /* Раунд 2 -> Раунд 3 */
-        .round[data-round="2"] .match-box:nth-child(1)::after,
-        .round[data-round="2"] .match-box:nth-child(2)::after {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            width: 20px;
-            height: 1px;
-            background: #ffeb3b;
-        }
-
-        .round[data-round="2"] .match-box:nth-child(1)::before {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            height: 30px;
-            width: 1px;
-            background: #ffeb3b;
-        }
-
-        .round[data-round="2"] .match-box:nth-child(2)::before {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: calc(50% - 30px);
-            height: 30px;
-            width: 1px;
-            background: #ffeb3b;
-        }
-
-        /* Раунд 3 -> Раунд 4 */
-        .round[data-round="3"] .match-box::after {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            width: 20px;
-            height: 1px;
-            background: #ffeb3b;
-        }
-
-        /* Раунд 4 -> Гранд-финал */
-        .round[data-round="4"] .match-box::after {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            width: 20px;
-            height: 1px;
-            background: #ffeb3b;
-        }
-
         /* Стрелки для нижней сетки */
-        /* Раунд 1 -> Раунд 2 */
-        .lower-bracket .round[data-round="1"] .match-box::after {
+        .lower-bracket .round[data-round] .match-box {
+            position: relative;
+        }
+
+        .lower-bracket .round[data-round] .match-box::after {
             content: '';
-            display: block;
             position: absolute;
             right: -20px;
             top: 50%;
             width: 20px;
             height: 1px;
-            background: #ffeb3b;
-        }
-
-        /* Раунд 2 -> Раунд 3 */
-        .lower-bracket .round[data-round="2"] .match-box:nth-child(1)::after,
-        .lower-bracket .round[data-round="2"] .match-box:nth-child(2)::after {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            width: 20px;
-            height: 1px;
-            background: #ffeb3b;
-        }
-
-        .lower-bracket .round[data-round="2"] .match-box:nth-child(1)::before {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            height: 30px;
-            width: 1px;
-            background: #ffeb3b;
-        }
-
-        .lower-bracket .round[data-round="2"] .match-box:nth-child(2)::before {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: calc(50% - 30px);
-            height: 30px;
-            width: 1px;
-            background: #ffeb3b;
-        }
-
-        /* Раунд 3 -> Раунд 4 */
-        .lower-bracket .round[data-round="3"] .match-box::after {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            width: 20px;
-            height: 1px;
-            background: #ffeb3b;
-        }
-
-        /* Раунд 4 -> Раунд 5 (финал нижней сетки) */
-        .lower-bracket .round[data-round="4"] .match-box::after {
-            content: '';
-            display: block;
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            width: 20px;
-            height: 1px;
-            background: #ffeb3b;
-        }
-
-        /* Стрелки-указатели */
-        .match-box::after {
-            content: '';
-            position: absolute;
-            right: -24px;
-            top: 50%;
-            width: 0;
-            height: 0;
-            border-left: 4px solid #ffeb3b;
-            border-top: 3px solid transparent;
-            border-bottom: 3px solid transparent;
-            transform: translateY(-50%);
-            z-index: 2;
+            background: #aaa;
         }
 
         /* Убираем стрелки для последних матчей */
         .round:last-child .match-box::after,
-        .round:last-child .match-box::before,
-        .round.grand-final .match-box::after,
-        .round.grand-final .match-box::before {
+        .round.grand-final .match-box::after {
             display: none;
         }
     </style>
