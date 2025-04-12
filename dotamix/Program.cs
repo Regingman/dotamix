@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
 using dotamix.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +19,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 #region DI (Dependency Injection)
 builder.Services.AddScoped<GoogleFormsService>();
 #endregion
-
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
