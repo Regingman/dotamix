@@ -559,9 +559,10 @@
             right: -20px;
             top: 50%;
             width: 20px;
-            height: 1px;
-            background: #555;
+            height: 2px;
+            background: #ff7f27;
             transform: translateY(-50%);
+            display: block !important;
         }
 
         .round:not(:last-child) .matches-container::after {
@@ -581,11 +582,12 @@
             top: 50%;
             width: 0;
             height: 0;
-            border-left: 4px solid #555;
-            border-top: 3px solid transparent;
-            border-bottom: 3px solid transparent;
+            border-left: 6px solid #ff7f27;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
             transform: translateY(-50%);
             z-index: 2;
+            display: block !important;
         }
 
         /* Удаляем все старые стили для стрелок */
@@ -615,8 +617,18 @@
 
         /* Убираем стрелки для последних матчей */
         .round:last-child .match-box::after,
-        .round.grand-final .match-box::after {
-            display: none;
+        .round:last-child .match-box::before,
+        .round.grand-final .match-box::after,
+        .round.grand-final .match-box::before {
+            display: none !important;
+        }
+
+        .round[data-round="4"] .matches-container {
+            padding-top: 150px;
+        }
+
+        .round.grand-final .matches-container {
+            padding-top: 150px;
         }
     </style>
 }
