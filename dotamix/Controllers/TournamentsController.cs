@@ -220,6 +220,14 @@ namespace dotamix.Controllers
             }
             else
             {
+                var players = await _context.TournamentParticipants.Where(e => e.TeamId == participant.TeamId && e.Id != participant.Id).ToListAsync();
+                participant.TeamId = null;
+                foreach (var temp in players)
+                {
+                    temp.TeamId = null;
+                }
+                await _context.SaveChangesAsync();
+
                 var team = await _context.Teams.FirstOrDefaultAsync(e => e.CaptainId == participant.UserId);
                 if (team != null)
                 {
@@ -227,8 +235,6 @@ namespace dotamix.Controllers
                     await _context.SaveChangesAsync();
                 }
 
-                participant.TeamId = null;
-                await _context.SaveChangesAsync();
             }
 
             return Json(new { success = true });
@@ -1624,6 +1630,40 @@ namespace dotamix.Controllers
             {
                 return await GenerateBracket(id);
             }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RandomizeTeams(int tournamentId)
+        {
+            var tournament = await _context.Tournaments
+                .Include(t => t.Teams)
+                .FirstOrDefaultAsync(t => t.Id == tournamentId);
+
+            if (tournament == null)
+            {
+                return Json(new { success = false, message = "Турнир не найден" });
+            }
+
+            var teams = tournament.Teams.ToList();
+            var random = new Random();
+
+            // Перемешиваем команды
+            for (int i = teams.Count - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                var temp = teams[i];
+                teams[i] = teams[j];
+                teams[j] = temp;
+            }
+
+            // Обновляем порядок команд
+            for (int i = 0; i < teams.Count; i++)
+            {
+                teams[i].Order = i;
+            }
+
+            await _context.SaveChangesAsync();
+            return Json(new { success = true });
         }
 
         private bool TournamentExists(int id)
