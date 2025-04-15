@@ -15,8 +15,9 @@
                     <h5 class="card-title">Информация о турнире</h5>
                     <p><strong>Дата начала:</strong> @Model.StartDate.ToString("dd.MM.yyyy HH:mm")</p>
                     <p><strong>Дата окончания:</strong> @Model.EndDate.ToString("dd.MM.yyyy HH:mm")</p>
-                    <p><strong>Статус:</strong> 
-                        <span class="badge @(Model.Status == TournamentStatus.Completed ? "bg-success" : 
+                    <p><strong>Статус:</strong>
+                        <span
+                            class="badge @(Model.Status == TournamentStatus.Completed ? "bg-success" : 
                                            Model.Status == TournamentStatus.InProgress ? "bg-primary" : "bg-secondary")">
                             @Model.Status
                         </span>
@@ -54,7 +55,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title">Участники</h5>
-            
+
             <div class="row mb-3">
                 <div class="col-md-3">
                     <input type="text" id="searchInput" class="form-control" placeholder="Поиск...">
@@ -99,18 +100,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @{int counter = 1;}
+                        @{
+                            int counter = 1;
+                        }
                         @foreach (var participant in Model.Participants.OrderBy(p => p.User.Nickname))
                         {
-                            <tr class="participant-row" 
-                                data-payment="@participant.IsPaid.ToString().ToLower()"
+                            <tr class="participant-row" data-payment="@participant.IsPaid.ToString().ToLower()"
                                 data-captain="@participant.IsCaptain.ToString().ToLower()"
                                 data-team="@(participant.TeamId?.ToString() ?? "")"
                                 data-search="@($"{participant.User.Name} {participant.User.Nickname} {participant.MMR} {participant.Positions}")"
-                                data-name="@participant.User.Name"
-                                data-nickname="@participant.User.Nickname"
-                                data-mmr="@participant.MMR"
-                                data-positions="@participant.Positions"
+                                data-name="@participant.User.Name" data-nickname="@participant.User.Nickname"
+                                data-mmr="@participant.MMR" data-positions="@participant.Positions"
                                 data-role="@(participant.IsCaptain ? "Капитан" : "Игрок")"
                                 data-team-name="@(participant.Team?.Name ?? "-")">
                                 <td>@counter</td>
@@ -119,12 +119,15 @@
                                 <td>@participant.MMR</td>
                                 <td>@participant.Positions</td>
                                 <td>
-                                    <span class="badge @(participant.IsPaid ? "bg-success" : "bg-danger")">
+                                    <span class="badge @(participant.IsPaid ? "bg-success" : "bg-danger") payment-badge"
+                                        data-participant-id="@participant.Id" style="cursor: pointer;">
                                         @(participant.IsPaid ? "Оплачено" : "Не оплачено")
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge @(participant.IsCaptain ? "bg-primary" : "bg-secondary")">
+                                    <span
+                                        class="badge @(participant.IsCaptain ? "bg-primary" : "bg-secondary") captain-badge"
+                                        data-participant-id="@participant.Id" style="cursor: pointer;">
                                         @(participant.IsCaptain ? "Капитан" : "Игрок")
                                     </span>
                                 </td>
@@ -141,7 +144,7 @@
 
 @section Scripts {
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             var currentSort = {
                 column: null,
                 direction: 'asc'
@@ -154,7 +157,7 @@
                 var teamId = $("#teamFilter").val();
                 var counter = 1;
 
-                $(".participant-row").each(function() {
+                $(".participant-row").each(function () {
                     var row = $(this);
                     var matchesSearch = row.data("search").toLowerCase().includes(searchText);
                     var matchesPayment = paymentStatus === "" || row.data("payment") === paymentStatus;
@@ -172,20 +175,20 @@
 
             function sortTable(column) {
                 var rows = $(".participant-row").toArray();
-                var direction = currentSort.column === column ? 
+                var direction = currentSort.column === column ?
                     (currentSort.direction === 'asc' ? 'desc' : 'asc') : 'asc';
-                
+
                 currentSort = { column, direction };
 
-                rows.sort(function(a, b) {
+                rows.sort(function (a, b) {
                     var aValue = $(a).data(column);
                     var bValue = $(b).data(column);
-                    
+
                     if (column === 'mmr') {
                         aValue = parseInt(aValue) || 0;
                         bValue = parseInt(bValue) || 0;
                     }
-                    
+
                     if (direction === 'asc') {
                         return aValue > bValue ? 1 : -1;
                     } else {
@@ -195,7 +198,7 @@
 
                 var tbody = $("#participantsTable tbody");
                 tbody.empty();
-                rows.forEach(function(row) {
+                rows.forEach(function (row) {
                     tbody.append(row);
                 });
 
@@ -205,12 +208,90 @@
                 icon.removeClass("fa-sort").addClass(direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
             }
 
-            $(".sortable").click(function() {
+            $(".sortable").click(function () {
                 var column = $(this).data("sort");
                 sortTable(column);
             });
 
             $("#searchInput, #paymentFilter, #captainFilter, #teamFilter").on("input change", filterTable);
+
+            // Обработка клика по бейджу оплаты
+            $(document).on('click', '.payment-badge', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Клик по бейджу оплаты');
+
+                const participantId = $(this).data("participant-id");
+                const isCurrentlyPaid = $(this).hasClass("bg-success");
+                const $badge = $(this);
+
+                $.ajax({
+                    url: '/Tournaments/UpdatePaymentStatusAjax',
+                    type: 'POST',
+                    data: {
+                        participantId: participantId,
+                        isPaid: !isCurrentlyPaid
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            if (!isCurrentlyPaid) {
+                                $badge.removeClass("bg-danger").addClass("bg-success").text("Оплачено");
+                                $badge.closest("tr").data("payment", "true");
+                            } else {
+                                $badge.removeClass("bg-success").addClass("bg-danger").text("Не оплачено");
+                                $badge.closest("tr").data("payment", "false");
+                            }
+                        } else {
+                            alert('Ошибка при обновлении статуса оплаты: ' + response.message);
+                            location.reload();
+                        }
+                    },
+                    error: function () {
+                        alert('Произошла ошибка при обновлении статуса оплаты');
+                        location.reload();
+                    }
+                });
+            });
+
+            // Обработка клика по бейджу капитана
+            $(document).on('click', '.captain-badge', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Клик по бейджу капитана');
+
+                const participantId = $(this).data("participant-id");
+                const isCurrentlyCaptain = $(this).hasClass("bg-primary");
+                const $badge = $(this);
+
+                $.ajax({
+                    url: '/Tournaments/UpdateCaptainStatusAjax',
+                    type: 'POST',
+                    data: {
+                        participantId: participantId,
+                        isCaptain: !isCurrentlyCaptain
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            if (!isCurrentlyCaptain) {
+                                $badge.removeClass("bg-secondary").addClass("bg-primary").text("Капитан");
+                                $badge.closest("tr").data("captain", "true");
+                                $badge.closest("tr").data("role", "Капитан");
+                            } else {
+                                $badge.removeClass("bg-primary").addClass("bg-secondary").text("Игрок");
+                                $badge.closest("tr").data("captain", "false");
+                                $badge.closest("tr").data("role", "Игрок");
+                            }
+                        } else {
+                            alert('Ошибка при обновлении статуса капитана: ' + response.message);
+                            location.reload();
+                        }
+                    },
+                    error: function () {
+                        alert('Произошла ошибка при обновлении статуса капитана');
+                        location.reload();
+                    }
+                });
+            });
         });
     </script>
-} 
+}

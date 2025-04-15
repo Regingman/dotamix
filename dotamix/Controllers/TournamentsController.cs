@@ -163,6 +163,38 @@ namespace dotamix.Controllers
             return RedirectToAction(nameof(PaymentStatus), new { id = tournamentId });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> UpdatePaymentStatusAjax(int participantId, bool isPaid)
+        {
+            var participant = await _context.TournamentParticipants
+                .FirstOrDefaultAsync(p => p.Id == participantId);
+
+            if (participant == null)
+            {
+                return Json(new { success = false, message = "Участник не найден" });
+            }
+
+            participant.IsPaid = isPaid;
+            await _context.SaveChangesAsync();
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateCaptainStatusAjax(int participantId, bool isCaptain)
+        {
+            var participant = await _context.TournamentParticipants
+                .FirstOrDefaultAsync(p => p.Id == participantId);
+
+            if (participant == null)
+            {
+                return Json(new { success = false, message = "Участник не найден" });
+            }
+
+            participant.IsCaptain = isCaptain;
+            await _context.SaveChangesAsync();
+            return Json(new { success = true });
+        }
+
         [HttpGet]
         public async Task<IActionResult> PaymentStatus(int id)
         {
