@@ -183,6 +183,8 @@ namespace dotamix.Controllers
         public async Task<IActionResult> UpdateCaptainStatusAjax(int participantId, bool isCaptain)
         {
             var participant = await _context.TournamentParticipants
+                .Include(e => e.User)
+                .Include(e => e.Tournament)
                 .FirstOrDefaultAsync(p => p.Id == participantId);
 
             if (participant == null)
@@ -192,6 +194,43 @@ namespace dotamix.Controllers
 
             participant.IsCaptain = isCaptain;
             await _context.SaveChangesAsync();
+
+            if (isCaptain == true)
+            {
+                if (!participant.IsCaptain)
+                {
+                    TempData["ErrorMessage"] = "Выбранный капитан недоступен";
+                    return RedirectToAction(nameof(FormTeams), new { id = participant.TournamentId });
+                }
+
+                var team = new Team
+                {
+                    Name = "Team " + participant.User.Nickname,
+                    TournamentId = participant.TournamentId,
+                    CaptainId = participant.UserId,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Teams.Add(team);
+                await _context.SaveChangesAsync();
+
+                // Добавляем капитана в команду
+                participant.TeamId = team.Id;
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                var team = await _context.Teams.FirstOrDefaultAsync(e => e.CaptainId == participant.UserId);
+                if (team != null)
+                {
+                    _context.Teams.Remove(team);
+                    await _context.SaveChangesAsync();
+                }
+
+                participant.TeamId = null;
+                await _context.SaveChangesAsync();
+            }
+
             return Json(new { success = true });
         }
 
