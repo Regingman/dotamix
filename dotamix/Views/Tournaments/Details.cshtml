@@ -1,134 +1,216 @@
 @model dotamix.Models.Tournament
+@using dotamix.Models
 
 @{
     ViewData["Title"] = "Детали турнира";
 }
 
-<h1>Детали турнира "@Model.Name"</h1>
+<div class="container">
+    <h2>@Model.Name</h2>
 
-<div>
-    <dl class="row">
-        <dt class="col-sm-2">Название</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(model => model.Name)</dd>
-
-        <dt class="col-sm-2">Дата начала</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(model => model.StartDate)</dd>
-
-        <dt class="col-sm-2">Дата окончания</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(model => model.EndDate)</dd>
-
-        <dt class="col-sm-2">Статус</dt>
-        <dd class="col-sm-10">
-            <span class="badge @(Model.Status == TournamentStatus.Completed ? "bg-success" : "bg-primary")">
-                @Model.Status.ToString()
-            </span>
-        </dd>
-    </dl>
-
-    @if (Model.Participants != null && Model.Participants.Any())
-    {
-        <h3>Участники</h3>
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Имя</th>
-                        <th>Никнейм</th>
-                        <th>MMR</th>
-                        <th>Позиция</th>
-                        <th>Статус оплаты</th>
-                        <th>Капитан</th>
-                        <th>Команда</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var participant in Model.Participants)
-                    {
-                        <tr>
-                            <td>@participant.User.Name</td>
-                            <td>@participant.User.Nickname</td>
-                            <td>@participant.MMR</td>
-                            <td>
-                                @participant.Positions
-                            </td>
-                            <td>
-                                <span class="badge @(participant.IsPaid ? "bg-success" : "bg-danger")">
-                                    @(participant.IsPaid ? "Оплачено" : "Не оплачено")
-                                </span>
-                            </td>
-                            <td>
-                                <span class="badge @(participant.IsCaptain ? "bg-primary" : "bg-secondary")">
-                                    @(participant.IsCaptain ? "Да" : "Нет")
-                                </span>
-                            </td>
-                            <td>
-                                @if (participant.Team != null)
-                                {
-                                    <a asp-controller="Teams" asp-action="Details" asp-route-id="@participant.Team.Id">
-                                        @participant.Team.Name
-                                    </a>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">Нет команды</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Информация о турнире</h5>
+                    <p><strong>Дата начала:</strong> @Model.StartDate.ToString("dd.MM.yyyy HH:mm")</p>
+                    <p><strong>Дата окончания:</strong> @Model.EndDate.ToString("dd.MM.yyyy HH:mm")</p>
+                    <p><strong>Статус:</strong> 
+                        <span class="badge @(Model.Status == TournamentStatus.Completed ? "bg-success" : 
+                                           Model.Status == TournamentStatus.InProgress ? "bg-primary" : "bg-secondary")">
+                            @Model.Status
+                        </span>
+                    </p>
+                    <p><strong>Количество команд:</strong> @Model.NumberOfTeams</p>
+                </div>
+            </div>
         </div>
-    }
-    else
-    {
-        <p class="alert alert-info">В турнире пока нет участников.</p>
-    }
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Действия</h5>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("ImportParticipants", new { id = Model.Id })" class="btn btn-primary">
+                            Импорт участников
+                        </a>
+                        <a href="@Url.Action("PaymentStatus", new { id = Model.Id })" class="btn btn-info">
+                            Статус оплаты
+                        </a>
+                        <a href="@Url.Action("SelectCaptains", new { id = Model.Id })" class="btn btn-success">
+                            Выбор капитанов
+                        </a>
+                        <a href="@Url.Action("FormTeams", new { id = Model.Id })" class="btn btn-warning">
+                            Формирование команд
+                        </a>
+                        <a href="@Url.Action("Bracket", new { id = Model.Id })" class="btn btn-secondary">
+                            Сетка турнира
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <div class="mt-4">
-        <h3>Команды</h3>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Название</th>
-                        <th>Капитан</th>
-                        <th>Количество игроков</th>
-                        <th>Средний MMR</th>
-                        <th>Статус</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var team in Model.Teams)
-                    {
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Участники</h5>
+            
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Поиск...">
+                </div>
+                <div class="col-md-3">
+                    <select id="paymentFilter" class="form-select">
+                        <option value="">Все статусы оплаты</option>
+                        <option value="true">Оплачено</option>
+                        <option value="false">Не оплачено</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="captainFilter" class="form-select">
+                        <option value="">Все роли</option>
+                        <option value="true">Капитаны</option>
+                        <option value="false">Игроки</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="teamFilter" class="form-select">
+                        <option value="">Все команды</option>
+                        @foreach (var team in Model.Teams ?? new List<Team>())
+                        {
+                            <option value="@team.Id">@team.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped" id="participantsTable">
+                    <thead>
                         <tr>
-                            <td>@team.Name</td>
-                            <td>@team.Captain.Name (@team.Captain.Nickname)</td>
-                            <td>@team.Players.Count</td>
-                            <td>@(team.Players.Any() ? team.Players.Average(p => p.MMR).ToString("F0") : "0")</td>
-                            <td>@(team.IsWinner ? "Победитель" : "-")</td>
+                            <th class="sortable" data-sort="number"># <i class="fas fa-sort"></i></th>
+                            <th class="sortable" data-sort="name">Имя <i class="fas fa-sort"></i></th>
+                            <th class="sortable" data-sort="nickname">Никнейм <i class="fas fa-sort"></i></th>
+                            <th class="sortable" data-sort="mmr">MMR <i class="fas fa-sort"></i></th>
+                            <th class="sortable" data-sort="positions">Позиции <i class="fas fa-sort"></i></th>
+                            <th class="sortable" data-sort="payment">Статус оплаты <i class="fas fa-sort"></i></th>
+                            <th class="sortable" data-sort="role">Роль <i class="fas fa-sort"></i></th>
+                            <th class="sortable" data-sort="team">Команда <i class="fas fa-sort"></i></th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @{int counter = 1;}
+                        @foreach (var participant in Model.Participants.OrderBy(p => p.User.Nickname))
+                        {
+                            <tr class="participant-row" 
+                                data-payment="@participant.IsPaid.ToString().ToLower()"
+                                data-captain="@participant.IsCaptain.ToString().ToLower()"
+                                data-team="@(participant.TeamId?.ToString() ?? "")"
+                                data-search="@($"{participant.User.Name} {participant.User.Nickname} {participant.MMR} {participant.Positions}")"
+                                data-name="@participant.User.Name"
+                                data-nickname="@participant.User.Nickname"
+                                data-mmr="@participant.MMR"
+                                data-positions="@participant.Positions"
+                                data-role="@(participant.IsCaptain ? "Капитан" : "Игрок")"
+                                data-team-name="@(participant.Team?.Name ?? "-")">
+                                <td>@counter</td>
+                                <td>@participant.User.Name</td>
+                                <td>@participant.User.Nickname</td>
+                                <td>@participant.MMR</td>
+                                <td>@participant.Positions</td>
+                                <td>
+                                    <span class="badge @(participant.IsPaid ? "bg-success" : "bg-danger")">
+                                        @(participant.IsPaid ? "Оплачено" : "Не оплачено")
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge @(participant.IsCaptain ? "bg-primary" : "bg-secondary")">
+                                        @(participant.IsCaptain ? "Капитан" : "Игрок")
+                                    </span>
+                                </td>
+                                <td>@(participant.Team?.Name ?? "-")</td>
+                            </tr>
+                            counter++;
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="mt-4">
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Редактировать</a>
-    <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
-    <a asp-action="PaymentStatus" asp-route-id="@Model.Id" class="btn btn-info">Статус оплаты</a>
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            var currentSort = {
+                column: null,
+                direction: 'asc'
+            };
 
+            function filterTable() {
+                var searchText = $("#searchInput").val().toLowerCase();
+                var paymentStatus = $("#paymentFilter").val();
+                var captainStatus = $("#captainFilter").val();
+                var teamId = $("#teamFilter").val();
+                var counter = 1;
 
-    <a asp-action="ImportParticipants" asp-route-id="@Model.Id" class="btn btn-success">Импорт участников</a>
-    <a asp-action="SelectCaptains" asp-route-id="@Model.Id" class="btn btn-info">Выбрать капитанов</a>
-    <a asp-action="FormTeams" asp-route-id="@Model.Id" class="btn btn-warning">Формировать команды</a>
-    @if (Model.Status != TournamentStatus.InProgress && Model.Status != TournamentStatus.Completed)
-    {
-        <form asp-action="GenerateBracket10Teams" method="post" class="mb-3">
-            <input type="hidden" name="id" value="@Model.Id" />
-            <button type="submit" class="btn btn-primary">Сгенерировать сетку турнира</button>
-        </form>
-    }
-    <a asp-action="Bracket" asp-route-id="@Model.Id" class="btn btn-info">Турнирная сетка</a>
-</div> 
+                $(".participant-row").each(function() {
+                    var row = $(this);
+                    var matchesSearch = row.data("search").toLowerCase().includes(searchText);
+                    var matchesPayment = paymentStatus === "" || row.data("payment") === paymentStatus;
+                    var matchesCaptain = captainStatus === "" || row.data("captain") === captainStatus;
+                    var matchesTeam = teamId === "" || row.data("team") === teamId;
+
+                    if (matchesSearch && matchesPayment && matchesCaptain && matchesTeam) {
+                        row.show();
+                        row.find("td:first").text(counter++);
+                    } else {
+                        row.hide();
+                    }
+                });
+            }
+
+            function sortTable(column) {
+                var rows = $(".participant-row").toArray();
+                var direction = currentSort.column === column ? 
+                    (currentSort.direction === 'asc' ? 'desc' : 'asc') : 'asc';
+                
+                currentSort = { column, direction };
+
+                rows.sort(function(a, b) {
+                    var aValue = $(a).data(column);
+                    var bValue = $(b).data(column);
+                    
+                    if (column === 'mmr') {
+                        aValue = parseInt(aValue) || 0;
+                        bValue = parseInt(bValue) || 0;
+                    }
+                    
+                    if (direction === 'asc') {
+                        return aValue > bValue ? 1 : -1;
+                    } else {
+                        return aValue < bValue ? 1 : -1;
+                    }
+                });
+
+                var tbody = $("#participantsTable tbody");
+                tbody.empty();
+                rows.forEach(function(row) {
+                    tbody.append(row);
+                });
+
+                // Обновляем иконки сортировки
+                $(".sortable i").removeClass("fa-sort-up fa-sort-down").addClass("fa-sort");
+                var icon = $(`.sortable[data-sort="${column}"] i`);
+                icon.removeClass("fa-sort").addClass(direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+            }
+
+            $(".sortable").click(function() {
+                var column = $(this).data("sort");
+                sortTable(column);
+            });
+
+            $("#searchInput, #paymentFilter, #captainFilter, #teamFilter").on("input change", filterTable);
+        });
+    </script>
+} 

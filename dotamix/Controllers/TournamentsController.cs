@@ -196,6 +196,10 @@ namespace dotamix.Controllers
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
+                var listPlayers = await _context.TournamentParticipants.Where(e => e.TournamentId == id).ToListAsync();
+                _context.TournamentParticipants.RemoveRange(listPlayers);
+                await _context.SaveChangesAsync();
+
                 using (var stream = new MemoryStream())
                 {
                     await excelFile.CopyToAsync(stream);
@@ -418,70 +422,170 @@ namespace dotamix.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddPlayerToTeam([FromBody] AddPlayerToTeamModel model)
+        public async Task<IActionResult> AddPlayerToTeam(int playerId, int teamId, int tournamentId)
         {
-            var team = await _context.Teams
-                .Include(t => t.Players)
-                .FirstOrDefaultAsync(t => t.Id == model.TeamId && t.TournamentId == model.TournamentId);
+            var tournament = await _context.Tournaments
+                .Include(t => t.Teams)
+                .FirstOrDefaultAsync(t => t.Id == tournamentId);
 
+            if (tournament == null)
+            {
+                return Json(new { success = false, message = "Турнир не найден" });
+            }
+
+            var team = tournament.Teams.FirstOrDefault(t => t.Id == teamId);
             if (team == null)
             {
                 return Json(new { success = false, message = "Команда не найдена" });
             }
 
-            var participant = await _context.TournamentParticipants
-                .FirstOrDefaultAsync(p => p.Id == model.UserId && p.TournamentId == model.TournamentId);
+            var player = await _context.TournamentParticipants
+                .FirstOrDefaultAsync(p => p.Id == playerId && p.TournamentId == tournamentId);
 
-            if (participant == null)
+            if (player == null)
             {
-                return Json(new { success = false, message = "Игрок не является участником турнира" });
+                return Json(new { success = false, message = "Игрок не найден" });
             }
 
-            if (participant.IsCaptain && participant.TeamId.HasValue)
+            // Проверяем, не состоит ли игрок уже в команде
+            if (player.TeamId.HasValue)
             {
-                return Json(new { success = false, message = "Нельзя добавить капитана другой команды" });
+                return Json(new { success = false, message = "Игрок уже состоит в команде" });
             }
 
-            if (team.Players.Count >= 5)
+            // Проверяем количество игроков в команде
+            var teamPlayers = await _context.TournamentParticipants
+                .CountAsync(p => p.TeamId == teamId);
+
+            if (teamPlayers >= 5)
             {
                 return Json(new { success = false, message = "В команде уже максимальное количество игроков" });
             }
 
-            participant.TeamId = team.Id;
+            // Добавляем игрока в команду
+            player.TeamId = teamId;
             await _context.SaveChangesAsync();
 
             return Json(new { success = true });
         }
 
         [HttpPost]
-        public async Task<IActionResult> RemovePlayerFromTeam(int teamId, int userId)
+        public async Task<IActionResult> RemovePlayerFromTeam(int teamId, int playerId, int tournamentId)
         {
-            var team = await _context.Teams
-                .Include(t => t.Players)
-                .FirstOrDefaultAsync(t => t.Id == teamId);
+            var tournament = await _context.Tournaments
+                .Include(t => t.Teams)
+                .FirstOrDefaultAsync(t => t.Id == tournamentId);
 
+            if (tournament == null)
+            {
+                return Json(new { success = false, message = "Турнир не найден" });
+            }
+
+            var team = tournament.Teams.FirstOrDefault(t => t.Id == teamId);
             if (team == null)
             {
-                return NotFound();
+                return Json(new { success = false, message = "Команда не найдена" });
             }
 
-            var user = await _context.TournamentParticipants.FindAsync(userId);
-            if (user == null)
+            var player = await _context.TournamentParticipants
+                .FirstOrDefaultAsync(p => p.Id == playerId && p.TournamentId == tournamentId);
+
+            if (player == null)
             {
-                return NotFound();
+                return Json(new { success = false, message = "Игрок не найден" });
             }
 
-            if (user.Id == team.CaptainId)
+            // Проверяем, что игрок действительно в этой команде
+            if (player.TeamId != teamId)
             {
-                TempData["ErrorMessage"] = "Нельзя удалить капитана из команды";
-                return RedirectToAction(nameof(FormTeams), new { id = team.TournamentId });
+                return Json(new { success = false, message = "Игрок не состоит в этой команде" });
             }
 
-            team.Players.Remove(user);
+            // Удаляем игрока из команды
+            player.TeamId = null;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Игрок {user.User.Nickname} удален из команды {team.Name}";
-            return RedirectToAction(nameof(FormTeams), new { id = team.TournamentId });
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateTeamOrder(int teamId, int newIndex, int tournamentId)
+        {
+            var tournament = await _context.Tournaments
+                .Include(t => t.Teams)
+                .FirstOrDefaultAsync(t => t.Id == tournamentId);
+
+            if (tournament == null)
+            {
+                return Json(new { success = false, message = "Турнир не найден" });
+            }
+
+            var team = tournament.Teams.FirstOrDefault(t => t.Id == teamId);
+            if (team == null)
+            {
+                return Json(new { success = false, message = "Команда не найдена" });
+            }
+
+            // Получаем все команды турнира
+            var teams = tournament.Teams.OrderBy(t => t.Id).ToList();
+
+            // Находим текущий индекс команды
+            var currentIndex = teams.FindIndex(t => t.Id == teamId);
+
+            // Если команда перемещается в ту же позицию, ничего не делаем
+            if (currentIndex == newIndex)
+            {
+                return Json(new { success = true });
+            }
+
+            // Перемещаем команду на новую позицию
+            teams.RemoveAt(currentIndex);
+            teams.Insert(newIndex, team);
+
+            // Обновляем порядок команд
+            for (int i = 0; i < teams.Count; i++)
+            {
+                teams[i].Id = i + 1;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteTeam(int teamId, int tournamentId)
+        {
+            var tournament = await _context.Tournaments
+                .Include(t => t.Teams)
+                .FirstOrDefaultAsync(t => t.Id == tournamentId);
+
+            if (tournament == null)
+            {
+                return Json(new { success = false, message = "Турнир не найден" });
+            }
+
+            var team = tournament.Teams.FirstOrDefault(t => t.Id == teamId);
+            if (team == null)
+            {
+                return Json(new { success = false, message = "Команда не найдена" });
+            }
+
+            // Освобождаем игроков из команды
+            var players = await _context.TournamentParticipants
+                .Where(p => p.TeamId == teamId && p.TournamentId == tournamentId)
+                .ToListAsync();
+
+            foreach (var player in players)
+            {
+                player.TeamId = null;
+            }
+
+            // Удаляем команду
+            _context.Teams.Remove(team);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
         }
 
         [HttpPost]
@@ -1040,7 +1144,7 @@ namespace dotamix.Controllers
             }
 
             // Проверяем, не участвует ли команда уже в этом матче
-            if ((match.HomeTeamId == teamId && position == "away") || 
+            if ((match.HomeTeamId == teamId && position == "away") ||
                 (match.AwayTeamId == teamId && position == "home"))
             {
                 return Json(new { success = false, message = "Команда уже участвует в этом матче" });

@@ -117,12 +117,12 @@
                             @foreach (var participant in ViewBag.PotentialCaptains)
                             {
                                 <tr class="player-row" 
-                                    data-name="@participant.User.Name.ToLower()" 
-                                    data-nickname="@participant.User.Nickname.ToLower()" 
+                                    data-name="@participant.User?.Name" 
+                                    data-nickname="@participant.User?.Nickname" 
                                     data-mmr="@participant.MMR"
                                     data-positions="@string.Join(",", participant.GetPositions())">
-                                    <td>@participant.User.Name</td>
-                                    <td>@participant.User.Nickname</td>
+                                    <td>@participant.User?.Name</td>
+                                    <td>@participant.User?.Nickname</td>
                                     <td>@participant.MMR</td>
                                     <td>
                                         @foreach (var position in participant.GetPositions())
