@@ -1632,12 +1632,12 @@ namespace dotamix.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> RandomizeTeams(int tournamentId)
+        [HttpGet]
+        public async Task<IActionResult> RandomizeTeams(int id)
         {
             var tournament = await _context.Tournaments
                 .Include(t => t.Teams)
-                .FirstOrDefaultAsync(t => t.Id == tournamentId);
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (tournament == null)
             {
@@ -1663,7 +1663,7 @@ namespace dotamix.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return Json(new { success = true });
+            return RedirectToAction(nameof(FormTeams), new { id = id });
         }
 
         private bool TournamentExists(int id)
