@@ -212,7 +212,7 @@ namespace dotamix.Controllers
                             var positions = worksheet.Cells[row, 5].Value?.ToString()?.Trim();
                             var phoneNumber = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
 
-                            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(nickname))
+                            if (string.IsNullOrEmpty(nickname))
                                 continue;
 
                             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Nickname == nickname);
