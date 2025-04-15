@@ -8,7 +8,7 @@ namespace dotamix.Models
         public int Id { get; set; }
         
         [StringLength(100)]
-        public string Name { get; set; }
+        public string? Name { get; set; }
         
         [Required]
         [StringLength(50)]

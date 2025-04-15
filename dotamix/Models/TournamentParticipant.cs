@@ -27,7 +27,7 @@ namespace dotamix.Models
         public bool HasPaid { get; set; }
         public int MMR { get; set; }
         public string Positions { get; set; } // Хранится как строка с разделителями, например "1,2,4"
-        public string PhoneNumber { get; set; } 
+        public string? PhoneNumber { get; set; } 
         public DateTime CreatedAt { get; set; }
 
         public List<int> GetPositions()
