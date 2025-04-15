@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text.Json;
 
 namespace dotamix.Controllers
 {
@@ -509,48 +510,41 @@ namespace dotamix.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdateTeamOrder(int teamId, int newIndex, int tournamentId)
+        public async Task<IActionResult> UpdateTeamOrder(int teamId, int newIndex, string teamOrder, int tournamentId)
         {
-            var tournament = await _context.Tournaments
-                .Include(t => t.Teams)
-                .FirstOrDefaultAsync(t => t.Id == tournamentId);
-
-            if (tournament == null)
+            try
             {
-                return Json(new { success = false, message = "Турнир не найден" });
-            }
+                var tournament = await _context.Tournaments
+                    .Include(t => t.Teams)
+                    .FirstOrDefaultAsync(t => t.Id == tournamentId);
 
-            var team = tournament.Teams.FirstOrDefault(t => t.Id == teamId);
-            if (team == null)
-            {
-                return Json(new { success = false, message = "Команда не найдена" });
-            }
+                if (tournament == null)
+                    return Json(new { success = false, message = "Турнир не найден" });
 
-            // Получаем все команды турнира
-            var teams = tournament.Teams.OrderBy(t => t.Id).ToList();
+                var team = tournament.Teams.FirstOrDefault(t => t.Id == teamId);
+                if (team == null)
+                    return Json(new { success = false, message = "Команда не найдена" });
 
-            // Находим текущий индекс команды
-            var currentIndex = teams.FindIndex(t => t.Id == teamId);
+                // Парсим порядок команд из JSON
+                var orderArray = JsonSerializer.Deserialize<int[]>(teamOrder);
 
-            // Если команда перемещается в ту же позицию, ничего не делаем
-            if (currentIndex == newIndex)
-            {
+                // Обновляем порядок всех команд
+                for (int i = 0; i < orderArray.Length; i++)
+                {
+                    var currentTeam = tournament.Teams.FirstOrDefault(t => t.Id == orderArray[i]);
+                    if (currentTeam != null)
+                    {
+                        currentTeam.Order = i;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
                 return Json(new { success = true });
             }
-
-            // Перемещаем команду на новую позицию
-            teams.RemoveAt(currentIndex);
-            teams.Insert(newIndex, team);
-
-            // Обновляем порядок команд
-            for (int i = 0; i < teams.Count; i++)
+            catch (Exception ex)
             {
-                teams[i].Id = i + 1;
+                return Json(new { success = false, message = "Произошла ошибка при обновлении порядка команд" });
             }
-
-            await _context.SaveChangesAsync();
-
-            return Json(new { success = true });
         }
 
         [HttpPost]

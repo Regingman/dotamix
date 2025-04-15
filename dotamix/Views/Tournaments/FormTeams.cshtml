@@ -21,7 +21,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row" id="teams-container">
-                        @foreach (var team in Model.Teams.OrderBy(t => t.Id))
+                        @foreach (var team in Model.Teams.OrderBy(t => t.Order))
                         {
                             <div class="col-md-3 mb-4" data-team-id="@team.Id">
                                 <div class="card border-dark h-100">
@@ -138,9 +138,30 @@
             new Sortable(document.getElementById('teams-container'), {
                 animation: 150,
                 onEnd: function(evt) {
-                    const teamId = evt.item.dataset.teamId;
+                    const teamId = parseInt(evt.item.getAttribute('data-team-id'));
                     const newIndex = evt.newIndex;
-                    updateTeamOrder(teamId, newIndex);
+                    
+                    // Получаем все команды в новом порядке
+                    const teams = Array.from(document.querySelectorAll('#teams-container > div'));
+                    const teamOrder = teams.map(team => parseInt(team.getAttribute('data-team-id')));
+                    
+                    // Отправляем запрос на обновление порядка
+                    $.post('/Tournaments/UpdateTeamOrder', { 
+                        teamId: teamId,
+                        newIndex: newIndex,
+                        teamOrder: JSON.stringify(teamOrder),
+                        tournamentId: @Model.Id 
+                    })
+                    .done(function(response) {
+                        if (!response.success) {
+                            alert(response.message || 'Произошла ошибка при изменении порядка команд');
+                            location.reload();
+                        }
+                    })
+                    .fail(function() {
+                        alert('Произошла ошибка при изменении порядка команд');
+                        location.reload();
+                    });
                 }
             });
 
@@ -154,26 +175,44 @@
                         put: true
                     },
                     onAdd: function(evt) {
-                        const playerId = evt.item.dataset.playerId;
-                        const teamId = evt.to.dataset.teamId;
+                        const playerId = parseInt(evt.item.getAttribute('data-player-id'));
+                        const teamId = parseInt(evt.to.getAttribute('data-team-id'));
                         
-                        // Добавляем кнопку удаления
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.type = 'button';
-                        deleteBtn.className = 'btn btn-link text-danger p-0 delete-btn';
-                        deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
-                        deleteBtn.onclick = function() {
-                            removePlayer(teamId, playerId);
-                        };
-                        
-                        const nicknameContainer = evt.item.querySelector('.d-flex.align-items-center.gap-2');
-                        if (nicknameContainer) {
-                            nicknameContainer.appendChild(deleteBtn);
+                        if (!playerId || !teamId) {
+                            console.error('Invalid player or team ID');
+                            return;
                         }
                         
                         // Отправляем запрос на сервер
                         $.post('/Tournaments/AddPlayerToTeam', { playerId, teamId, tournamentId: @Model.Id })
-                            .fail(function() {
+                            .done(function(response) {
+                                if (response && response.success) {
+                                    // Создаем новую карточку с кнопкой удаления
+                                    const newCard = evt.item.cloneNode(true);
+                                    const deleteBtn = document.createElement('button');
+                                    deleteBtn.type = 'button';
+                                    deleteBtn.className = 'btn btn-link text-danger p-0 delete-btn';
+                                    deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+                                    deleteBtn.onclick = function() {
+                                        removePlayer(teamId, playerId);
+                                    };
+                                    
+                                    const nicknameContainer = newCard.querySelector('.d-flex.align-items-center.gap-2');
+                                    if (nicknameContainer) {
+                                        nicknameContainer.appendChild(deleteBtn);
+                                    }
+                                    
+                                    // Удаляем старую карточку и добавляем новую
+                                    evt.item.remove();
+                                    container.appendChild(newCard);
+                                } else {
+                                    const errorMessage = response && response.message ? response.message : 'Произошла ошибка при добавлении игрока';
+                                    alert(errorMessage);
+                                    location.reload();
+                                }
+                            })
+                            .fail(function(jqXHR, textStatus, errorThrown) {
+                                console.error('Error:', textStatus, errorThrown);
                                 alert('Произошла ошибка при добавлении игрока');
                                 location.reload();
                             });
@@ -181,62 +220,24 @@
                 });
             });
 
-            // Инициализация Sortable для свободных игроков
-            new Sortable(document.getElementById('free-players'), {
-                animation: 150,
-                group: {
-                    name: 'players',
-                    pull: true,
-                    put: true
-                }
-            });
+            //// Удаляем старый обработчик drag-and-drop
+            //document.querySelectorAll('.players-container').forEach(container => {
+            //    container.removeEventListener('dragover', function(e) {
+            //        e.preventDefault();
+            //    });
 
-            // Функция для создания карточки игрока
-            function createPlayerCard(player, teamId = null) {
-                const card = document.createElement('div');
-                card.className = 'player-item mb-2 p-2 border rounded';
-                card.dataset.playerId = player.Id;
-                card.dataset.playerPositions = player.Positions;
-
-                const content = `
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="d-flex align-items-center gap-2">
-                                <strong>${player.User.Nickname}</strong>
-                                ${teamId ? `<button type="button" class="btn btn-link text-danger p-0 delete-btn" onclick="removePlayer(${teamId}, ${player.Id})">
-                                    <i class="fas fa-times"></i>
-                                </button>` : ''}
-                            </div>
-                            <small class="text-muted d-block">${player.MMR} MMR</small>
-                            <div class="positions mt-1">
-                                ${player.GetPositions().map(pos => `<span class="position-badge pos-${pos}">${pos}</span>`).join('')}
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                card.innerHTML = content;
-                return card;
-            }
-
-            // Обновляем обработчики drag-and-drop
-            document.querySelectorAll('.players-container').forEach(container => {
-                container.addEventListener('dragover', function(e) {
-                    e.preventDefault();
-                });
-
-                container.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                    const playerId = e.dataTransfer.getData('text/plain');
-                    const teamId = this.dataset.teamId;
-                    if (playerId && teamId) {
-                        addPlayerToTeam(playerId, teamId);
-                    }
-                });
-            });
+            //    container.removeEventListener('drop', function(e) {
+            //        e.preventDefault();
+            //        const playerId = e.dataTransfer.getData('text/plain');
+            //        const teamId = this.dataset.teamId;
+            //        if (playerId && teamId) {
+            //            addPlayerToTeam(playerId, teamId);
+            //        }
+            //    });
+            //});
 
             document.querySelectorAll('.player-item').forEach(item => {
-                item.addEventListener('dragstart', function(e) {
+                item.removeEventListener('dragstart', function(e) {
                     e.dataTransfer.setData('text/plain', this.dataset.playerId);
                 });
             });
@@ -312,20 +313,6 @@
                         alert('Произошла ошибка при удалении игрока');
                     });
             }
-        }
-
-        function updateTeamOrder(teamId, newIndex) {
-            $.post('/Tournaments/UpdateTeamOrder', { teamId, newIndex, tournamentId: @Model.Id })
-                .done(function(response) {
-                    if (!response.success) {
-                        alert(response.message);
-                        location.reload();
-                    }
-                })
-                .fail(function() {
-                    alert('Произошла ошибка при изменении порядка команд');
-                    location.reload();
-                });
         }
 
         function deleteTeam(teamId) {

@@ -21,8 +21,10 @@ namespace dotamix.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        public int Order { get; set; }
+
         public virtual ICollection<TournamentParticipant> Players { get; set; }
         public virtual ICollection<Match> HomeMatches { get; set; }
         public virtual ICollection<Match> AwayMatches { get; set; }
     }
-} 
+}
