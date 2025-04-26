@@ -1,0 +1,81 @@
+@{
+    ViewData["Title"] = "Профиль";
+    var userInfo = ViewBag.UserInfo as dotamix.Services.SteamUserInfo;
+    var dota2Info = ViewBag.Dota2Info as dotamix.Services.Dota2PlayerInfo;
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Профиль игрока</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <img src="@userInfo?.AvatarUrl" alt="Avatar" class="img-fluid rounded-circle mb-3"
+                                style="max-width: 150px;">
+                        </div>
+                        <div class="col-md-8">
+                            <h4>@userInfo?.Nickname</h4>
+                            <p class="text-muted">Steam ID: @userInfo?.SteamId</p>
+                            <p>
+                                <span class="badge @(userInfo?.IsOnline == true ? "bg-success" : "bg-secondary")">
+                                    @(userInfo?.IsOnline == true ? "Онлайн" : "Оффлайн")
+                                </span>
+                            </p>
+                            <hr>
+                            <h5>Статистика Dota 2</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p>MMR: <span>@dota2Info?.Mmr</span></p>
+                                    <p>Ранг: <span>@dota2Info?.Rank</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p>Побед: <span>@dota2Info?.Wins</span></p>
+                                    <p>Поражений: <span>@dota2Info?.Losses</span></p>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <h6>Дополнительная статистика</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <p>Убийств: @dota2Info?.Kills</p>
+                                            <p>Смертей: @dota2Info?.Deaths</p>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <p>Помощь: @dota2Info?.Assists</p>
+                                            <p>GPM: @dota2Info?.Gpm</p>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <p>XPM: @dota2Info?.Xpm</p>
+                                            <p>Урон по героям: @dota2Info?.HeroDamage</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // В реальном приложении здесь должен быть AJAX-запрос для получения данных пользователя
+            // Для тестового примера мы просто показываем заглушку
+            $('#avatar').attr('src', 'https://via.placeholder.com/150');
+            $('#nickname').text('Тестовый пользователь');
+            $('#steamId').text('76561198123456789');
+            $('#mmr').text('5000');
+            $('#rank').text('Immortal');
+            $('#wins').text('1000');
+            $('#losses').text('800');
+        });
+    </script>
+}

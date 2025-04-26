@@ -18,6 +18,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 #region DI (Dependency Injection)
 builder.Services.AddScoped<GoogleFormsService>();
+builder.Services.AddScoped<SteamService>();
 #endregion
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {

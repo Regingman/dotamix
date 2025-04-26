@@ -97,6 +97,7 @@
                             <th class="sortable" data-sort="payment">Статус оплаты <i class="fas fa-sort"></i></th>
                             <th class="sortable" data-sort="role">Роль <i class="fas fa-sort"></i></th>
                             <th class="sortable" data-sort="team">Команда <i class="fas fa-sort"></i></th>
+                            <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -112,15 +113,15 @@
                                 data-name="@participant.User.Name" data-nickname="@participant.User.Nickname"
                                 data-mmr="@participant.MMR" data-positions="@participant.Positions"
                                 data-role="@(participant.IsCaptain ? "Капитан" : "Игрок")"
-                                data-team-name="@(participant.Team?.Name ?? "-")">
+                                data-team-name="@(participant.Team?.Name ?? "-")" data-participant-id="@participant.Id">
                                 <td>@counter</td>
                                 <td>@participant.User.Name</td>
                                 <td>@participant.User.Nickname</td>
                                 <td>@participant.MMR</td>
                                 <td>@participant.Positions</td>
                                 <td>
-                                    <span class="badge @(participant.IsPaid ? "bg-success" : "bg-danger") payment-badge"
-                                        data-participant-id="@participant.Id" style="cursor: pointer;">
+                                    <span class=" badge @(participant.IsPaid ? "bg-success" : "bg-danger")
+                                        payment-badge" data-participant-id="@participant.Id" style="cursor: pointer;">
                                         @(participant.IsPaid ? "Оплачено" : "Не оплачено")
                                     </span>
                                 </td>
@@ -132,11 +133,68 @@
                                     </span>
                                 </td>
                                 <td>@(participant.Team?.Name ?? "-")</td>
+                                <td>
+                                    @if (participant.TeamId != null)
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary replace-player-btn"
+                                            data-participant-id="@participant.Id" data-team-id="@participant.TeamId"
+                                            data-current-player-id="@participant.Id">
+                                            <i class="fas fa-exchange-alt"></i> Заменить
+                                        </button>
+                                    }
+                                </td>
                             </tr>
                             counter++;
                         }
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для замены игрока -->
+<div class="modal fade" id="replacePlayerModal" tabindex="-1" aria-labelledby="replacePlayerModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="replacePlayerModalLabel">Замена игрока</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="newPlayerFirstName" class="form-label">Имя нового игрока:</label>
+                    <input type="text" id="newPlayerFirstName" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="newPlayerLastName" class="form-label">Фамилия нового игрока:</label>
+                    <input type="text" id="newPlayerLastName" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="newPlayerNickname" class="form-label">Никнейм нового игрока:</label>
+                    <input type="text" id="newPlayerNickname" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="newPlayerMMR" class="form-label">MMR нового игрока:</label>
+                    <input type="number" id="newPlayerMMR" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="newPlayerPositions" class="form-label">Позиции нового игрока:</label>
+                    <input type="text" id="newPlayerPositions" class="form-control" placeholder="Например: 1,2,3"
+                        required>
+                </div>
+                <div class="mb-3">
+                    <label for="newPlayerPhoneNumber" class="form-label">Номер телефона нового игрока:</label>
+                    <input type="text" id="newPlayerPhoneNumber" class="form-control" required>
+                </div>
+                <div id="playerInfo" class="alert alert-info d-none">
+                    <!-- Информация о текущем игроке -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmReplaceBtn">Заменить</button>
             </div>
         </div>
     </div>
@@ -290,6 +348,85 @@
                         alert('Произошла ошибка при обновлении статуса капитана');
                         location.reload();
                     }
+                });
+            });
+
+            // Обработка клика по кнопке замены игрока
+            $(document).on('click', '.replace-player-btn', function () {
+                const teamId = $(this).data('team-id');
+                const currentPlayerId = $(this).data('current-player-id');
+                const currentPlayerName = $(this).closest('tr').find('td:eq(1)').text();
+                const currentPlayerNickname = $(this).closest('tr').find('td:eq(2)').text();
+                const currentPlayerMMR = $(this).closest('tr').find('td:eq(3)').text();
+                const currentPlayerPositions = $(this).closest('tr').find('td:eq(4)').text();
+
+                // Сохраняем данные для замены
+                window.replacePlayerData = {
+                    teamId: teamId,
+                    currentPlayerId: currentPlayerId,
+                    currentPlayerName: currentPlayerName,
+                    currentPlayerNickname: currentPlayerNickname,
+                    currentPlayerMMR: currentPlayerMMR,
+                    currentPlayerPositions: currentPlayerPositions
+                };
+
+                // Показываем информацию о текущем игроке
+                $('#playerInfo').html(`
+                        <strong>Текущий игрок:</strong> ${currentPlayerName} (${currentPlayerNickname})<br>
+                        <strong>MMR:</strong> ${currentPlayerMMR}<br>
+                        <strong>Позиции:</strong> ${currentPlayerPositions}
+                    `).removeClass('d-none');
+
+                // Очищаем поля формы
+                $('#newPlayerFirstName').val('');
+                $('#newPlayerLastName').val('');
+                $('#newPlayerNickname').val('');
+                $('#newPlayerMMR').val('');
+                $('#newPlayerPositions').val('');
+                $('#newPlayerPhoneNumber').val('');
+
+                // Открываем модальное окно
+                $('#replacePlayerModal').modal('show');
+            });
+
+            // Обработка подтверждения замены
+            $('#confirmReplaceBtn').on('click', function () {
+                const { teamId, currentPlayerId } = window.replacePlayerData;
+                const newPlayerFirstName = $('#newPlayerFirstName').val();
+                const newPlayerLastName = $('#newPlayerLastName').val();
+                const newPlayerNickname = $('#newPlayerNickname').val();
+                const newPlayerMMR = $('#newPlayerMMR').val();
+                const newPlayerPositions = $('#newPlayerPositions').val();
+                const newPlayerPhoneNumber = $('#newPlayerPhoneNumber').val();
+
+                // Проверяем, что все поля заполнены
+                if (!newPlayerFirstName || !newPlayerLastName || !newPlayerNickname || !newPlayerMMR || !newPlayerPositions || !newPlayerPhoneNumber) {
+                    alert('Пожалуйста, заполните все поля');
+                    return;
+                }
+
+                $.post('/Tournaments/ReplacePlayer', {
+                    tournamentId: @Model.Id,
+                    teamId: teamId,
+                    oldPlayerId: currentPlayerId,
+                    newPlayerFirstName: newPlayerFirstName,
+                    newPlayerLastName: newPlayerLastName,
+                    newPlayerNickname: newPlayerNickname,
+                    newPlayerMMR: newPlayerMMR,
+                    newPlayerPositions: newPlayerPositions,
+                    newPlayerPhoneNumber: newPlayerPhoneNumber
+                }, function (response) {
+                    if (response.success) {
+                        // Закрываем модальное окно
+                        $('#replacePlayerModal').modal('hide');
+
+                        // Обновляем страницу
+                        location.reload();
+                    } else {
+                        alert(response.message || 'Ошибка при замене игрока');
+                    }
+                }).fail(function () {
+                    alert('Произошла ошибка при замене игрока');
                 });
             });
         });

@@ -1688,5 +1688,94 @@ namespace dotamix.Controllers
                 }
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAvailablePlayers(int tournamentId, int excludePlayerId)
+        {
+            try
+            {
+                // Получаем всех участников турнира, кроме указанного
+                var availablePlayers = await _context.TournamentParticipants
+                    .Include(p => p.User)
+                    .Where(p => p.TournamentId == tournamentId && p.Id != excludePlayerId)
+                    .Select(p => new
+                    {
+                        id = p.Id,
+                        mmr = p.MMR,
+                        positions = p.Positions,
+                        user = new { nickname = p.User.Nickname }
+                    })
+                    .ToListAsync();
+
+                return Json(availablePlayers);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ReplacePlayer(int tournamentId, int teamId, int oldPlayerId, string newPlayerFirstName, string newPlayerLastName, string newPlayerNickname, int newPlayerMMR, string newPlayerPositions, string newPlayerPhoneNumber)
+        {
+            try
+            {
+                // Получаем старого игрока
+                var oldPlayer = await _context.TournamentParticipants
+                    .FirstOrDefaultAsync(p => p.Id == oldPlayerId);
+
+                if (oldPlayer == null)
+                    return Json(new { success = false, message = "Игрок не найден" });
+
+                // Проверяем, что старый игрок принадлежит к указанному турниру
+                if (oldPlayer.TournamentId != tournamentId)
+                    return Json(new { success = false, message = "Игрок не принадлежит указанному турниру" });
+
+                // Проверяем, что старый игрок находится в указанной команде
+                if (oldPlayer.TeamId != teamId)
+                    return Json(new { success = false, message = "Игрок не находится в указанной команде" });
+
+                // Создаем нового пользователя
+                var newUser = new User
+                {
+                    Name = $"{newPlayerFirstName} {newPlayerLastName}",
+                    Nickname = newPlayerNickname,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Users.Add(newUser);
+                await _context.SaveChangesAsync();
+
+                // Создаем нового игрока в команде
+                var replacementPlayer = new TournamentParticipant
+                {
+                    UserId = newUser.Id,
+                    TournamentId = tournamentId,
+                    TeamId = teamId,
+                    IsCaptain = oldPlayer.IsCaptain,
+                    IsPaid = oldPlayer.IsPaid,
+                    HasPaid = oldPlayer.HasPaid,
+                    MMR = newPlayerMMR,
+                    Positions = newPlayerPositions,
+                    PhoneNumber = newPlayerPhoneNumber,
+                    RegistrationDate = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                // Добавляем нового игрока в команду
+                _context.TournamentParticipants.Add(replacementPlayer);
+
+                // Удаляем старого игрока из команды
+                _context.TournamentParticipants.Remove(oldPlayer);
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
     }
 }

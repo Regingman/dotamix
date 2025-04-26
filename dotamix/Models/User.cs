@@ -9,6 +9,8 @@ namespace dotamix.Models
         
         [StringLength(100)]
         public string? Name { get; set; }
+        public string? SteamId { get; set; }
+        public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
         
         [Required]
         [StringLength(50)]
