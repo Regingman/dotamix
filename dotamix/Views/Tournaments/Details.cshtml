@@ -121,7 +121,8 @@
                                 <td>@participant.Positions</td>
                                 <td>
                                     <span class=" badge @(participant.IsPaid ? "bg-success" : "bg-danger")
-                                        payment-badge" data-participant-id="@participant.Id" style="cursor: pointer;">
+                                                payment-badge" data-participant-id="@participant.Id"
+                                        style="cursor: pointer;">
                                         @(participant.IsPaid ? "Оплачено" : "Не оплачено")
                                     </span>
                                 </td>
@@ -134,14 +135,11 @@
                                 </td>
                                 <td>@(participant.Team?.Name ?? "-")</td>
                                 <td>
-                                    @if (participant.TeamId != null)
-                                    {
-                                        <button class="btn btn-sm btn-outline-primary replace-player-btn"
-                                            data-participant-id="@participant.Id" data-team-id="@participant.TeamId"
-                                            data-current-player-id="@participant.Id">
-                                            <i class="fas fa-exchange-alt"></i> Заменить
-                                        </button>
-                                    }
+                                    <button class="btn btn-sm btn-outline-primary replace-player-btn"
+                                        data-participant-id="@participant.Id" data-team-id="@(participant.TeamId ?? 0)"
+                                        data-current-player-id="@participant.Id">
+                                        <i class="fas fa-exchange-alt"></i> Заменить
+                                    </button>
                                 </td>
                             </tr>
                             counter++;
@@ -359,6 +357,7 @@
                 const currentPlayerNickname = $(this).closest('tr').find('td:eq(2)').text();
                 const currentPlayerMMR = $(this).closest('tr').find('td:eq(3)').text();
                 const currentPlayerPositions = $(this).closest('tr').find('td:eq(4)').text();
+                const hasTeam = teamId !== 0;
 
                 // Сохраняем данные для замены
                 window.replacePlayerData = {
@@ -367,14 +366,16 @@
                     currentPlayerName: currentPlayerName,
                     currentPlayerNickname: currentPlayerNickname,
                     currentPlayerMMR: currentPlayerMMR,
-                    currentPlayerPositions: currentPlayerPositions
+                    currentPlayerPositions: currentPlayerPositions,
+                    hasTeam: hasTeam
                 };
 
                 // Показываем информацию о текущем игроке
                 $('#playerInfo').html(`
                         <strong>Текущий игрок:</strong> ${currentPlayerName} (${currentPlayerNickname})<br>
                         <strong>MMR:</strong> ${currentPlayerMMR}<br>
-                        <strong>Позиции:</strong> ${currentPlayerPositions}
+                        <strong>Позиции:</strong> ${currentPlayerPositions}<br>
+                        <strong>Команда:</strong> ${hasTeam ? 'Есть' : 'Нет'}
                     `).removeClass('d-none');
 
                 // Очищаем поля формы

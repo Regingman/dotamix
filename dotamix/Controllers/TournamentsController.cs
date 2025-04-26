@@ -1731,8 +1731,8 @@ namespace dotamix.Controllers
                 if (oldPlayer.TournamentId != tournamentId)
                     return Json(new { success = false, message = "Игрок не принадлежит указанному турниру" });
 
-                // Проверяем, что старый игрок находится в указанной команде
-                if (oldPlayer.TeamId != teamId)
+                // Проверяем, что старый игрок находится в указанной команде (если teamId > 0)
+                if (teamId > 0 && oldPlayer.TeamId != teamId)
                     return Json(new { success = false, message = "Игрок не находится в указанной команде" });
 
                 // Создаем нового пользователя
@@ -1746,12 +1746,12 @@ namespace dotamix.Controllers
                 _context.Users.Add(newUser);
                 await _context.SaveChangesAsync();
 
-                // Создаем нового игрока в команде
+                // Создаем нового игрока
                 var replacementPlayer = new TournamentParticipant
                 {
                     UserId = newUser.Id,
                     TournamentId = tournamentId,
-                    TeamId = teamId,
+                    TeamId = teamId > 0 ? teamId : null, // Если teamId = 0, то игрок не в команде
                     IsCaptain = oldPlayer.IsCaptain,
                     IsPaid = oldPlayer.IsPaid,
                     HasPaid = oldPlayer.HasPaid,
@@ -1762,10 +1762,10 @@ namespace dotamix.Controllers
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // Добавляем нового игрока в команду
+                // Добавляем нового игрока
                 _context.TournamentParticipants.Add(replacementPlayer);
 
-                // Удаляем старого игрока из команды
+                // Удаляем старого игрока
                 _context.TournamentParticipants.Remove(oldPlayer);
 
                 await _context.SaveChangesAsync();
