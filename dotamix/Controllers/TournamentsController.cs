@@ -1735,16 +1735,25 @@ namespace dotamix.Controllers
                 if (teamId > 0 && oldPlayer.TeamId != teamId)
                     return Json(new { success = false, message = "Игрок не находится в указанной команде" });
 
-                // Создаем нового пользователя
-                var newUser = new User
-                {
-                    Name = $"{newPlayerFirstName} {newPlayerLastName}",
-                    Nickname = newPlayerNickname,
-                    CreatedAt = DateTime.UtcNow
-                };
 
-                _context.Users.Add(newUser);
-                await _context.SaveChangesAsync();
+                // Создаем нового пользователя
+                var newUser = new User();
+                var user = await _context.Users.FirstOrDefaultAsync(e => e.Nickname == newPlayerNickname);
+                if (user != null)
+                {
+                    newUser = user;
+                }
+                else
+                {
+                    newUser = new User()
+                    {
+                        Name = $"{newPlayerFirstName} {newPlayerLastName}",
+                        Nickname = newPlayerNickname,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Users.Add(newUser);
+                    await _context.SaveChangesAsync();
+                }
 
                 // Создаем нового игрока
                 var replacementPlayer = new TournamentParticipant
