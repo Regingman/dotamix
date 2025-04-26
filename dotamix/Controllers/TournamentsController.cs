@@ -276,6 +276,8 @@ namespace dotamix.Controllers
 
                 var listPlayers = await _context.TournamentParticipants.Where(e => e.TournamentId == id).ToListAsync();
                 _context.TournamentParticipants.RemoveRange(listPlayers);
+                var teams = await _context.Teams.Where(e => e.TournamentId == id).ToListAsync();
+                _context.Teams.RemoveRange(teams);
                 await _context.SaveChangesAsync();
 
                 using (var stream = new MemoryStream())
