@@ -1742,6 +1742,10 @@ namespace dotamix.Controllers
                 if (user != null)
                 {
                     newUser = user;
+                    newUser.Name = $"{newPlayerFirstName} {newPlayerLastName}";
+
+                    _context.Update(newUser);
+                    await _context.SaveChangesAsync();
                 }
                 else
                 {
